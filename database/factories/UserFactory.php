@@ -21,8 +21,6 @@ class UserFactory extends Factory
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
-            // 👑 【ハッシュ例外を100%根絶する確実な記述】
-            // テスト実行環境に依存する固定文字列ではなく、PHPそのものがその場で安全に暗号化するbcrypt関数で確定させます。
             'password' => bcrypt('password'),
             'remember_token' => Str::random(10),
             'admin_status' => false,

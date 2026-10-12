@@ -15,7 +15,7 @@ class AttendanceRecordController extends Controller
 {
     /**
      * 一般ユーザー：打刻画面を表示し、現在のステータスを判定する
-     * 
+     *
      * @return \Illuminate\View\View
      */
     public function index(): View
@@ -61,7 +61,7 @@ class AttendanceRecordController extends Controller
 
     /**
      * 一般ユーザー：提供Bladeの一体型フォームから送られてくるPOST処理を安全に分岐・保存する
-     * 
+     *
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
@@ -126,7 +126,7 @@ class AttendanceRecordController extends Controller
 
     /**
      * 一般ユーザー：ログインユーザーの当月勤怠一覧を表示する
-     * 
+     *
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\View\View
      */
@@ -144,22 +144,22 @@ class AttendanceRecordController extends Controller
         $previousMonth = $date->copy()->subMonth()->format('Y-m');
         $nextMonth = $date->copy()->addMonth()->format('Y-m');
 
-        // 【開発プロセス遵守】Eager Loading (with) を使用してN+1問題を絶対に防止します
+        // Eager Loading (with) を使用してN+1問題を防止します
         $attendanceRecords = AttendanceRecord::where('user_id', $user->id)
             ->where('date', 'like', $monthParam . '%')
             ->orderBy('date', 'asc')
-            ->with('restRecords') 
+            ->with('restRecords')
             ->get()
             ->keyBy('date'); // 日付をキーにして検索しやすくします
 
-        // 💡 1日から末日までの全日付のデータを組み立てるためのカレンダー用ループ
+        // 1日から末日までの全日付のデータを組み立てるためのカレンダー用ループ
         $formattedAttendanceRecords = [];
         $startOfMonth = $date->copy()->startOfMonth();
         $endOfMonth = $date->copy()->endOfMonth();
         for ($d = $startOfMonth->copy(); $d->lte($endOfMonth); $d->addDay()) {
             $currentDateStr = $d->format('Y-m-d');
 
-            // 💡 曜日を日本語の「(月)〜(日)」形式で取得 [FN023]
+            //  曜日を日本語の「(月)〜(日)」形式で取得 [FN023]
             $dayOfWeek = '(' . $d->isoFormat('ddd') . ')';
 
             // その日の勤怠データがデータベースに実在するかチェック
@@ -168,7 +168,7 @@ class AttendanceRecordController extends Controller
                 $clockIn = Carbon::parse($record->clock_in);
                 $clockOut = $record->clock_out ? Carbon::parse($record->clock_out) : null;
 
-                // 休憩合計時間の計算を Collection メソッド(filter, sum) でスマートに実装
+                // 休憩合計時間の計算を Collection メソッド(filter, sum) で実装
                 $totalBreakSeconds = collect($record->restRecords ?? [])
                     ->filter(function ($rest) {
                         return $rest->break_in && $rest->break_out;
@@ -218,7 +218,7 @@ class AttendanceRecordController extends Controller
                 ];
             }
         }
-        // 👑 【空データ安全ガード】データが存在する時のみ安全に曜日変換を掛けます
+        // データが存在する時のみ安全に曜日変換を掛けます
         if ($attendanceRecords && $attendanceRecords->count() > 0) {
             $attendanceRecords->each(function ($record) {
                 if (isset($record->formatted_date) && $record->formatted_date !== '') {
@@ -227,7 +227,7 @@ class AttendanceRecordController extends Controller
             });
         }
 
-        // 提供Bladeが必要としている変数を過不足なくすべてcompactで引き渡します
+        // 提供Bladeが必要としている変数をすべてcompactで引き渡します
         return view('user.user-attendance-list', compact(
             'date',
             'previousMonth',
@@ -246,7 +246,7 @@ class AttendanceRecordController extends Controller
     {
         $user = Auth::user();
 
-        // 【10-6対応】Eager Loading (with) を使用して休憩と申請履歴をまとめて取得（N+1を絶対に防止）
+        // 【10-6対応】Eager Loading (with) を使用して休憩と申請履歴をまとめて取得（N+1を防止）
         $attendance = AttendanceRecord::with(['restRecords', 'stampCorrectionRequests'])->findOrFail($id);
 
         // ログインしている本人のデータ、または管理者でなければ閲覧できないように制限
@@ -268,11 +268,11 @@ class AttendanceRecordController extends Controller
             ];
         }
 
-        // 💡 【10-6徹底補強】DBへの再クエリを完全排除！withで取得済みのコレクションから「firstWhere」を使って高速に抽出します！
+        // 【10-6徹底補強】DBへの再クエリを完全排除！withで取得済みのコレクションから「firstWhere」を使って抽出します
         $application = $attendance->stampCorrectionRequests->firstWhere('status', 0);
 
-        // 💡 提供されたBladeの $data の配列キーの仕様と100%一致するようにオブジェクトを組み立てます
-        // 💡 承認待ちの申請がある場合は修正希望時間を、無い場合は元の打刻時間を画面の初期値にセットします [FN025]
+        // 提供されたBladeの $data の配列キーの仕様と100%一致するようにオブジェクトを組み立てます
+        // 承認待ちの申請がある場合は修正希望時間を、無い場合は元の打刻時間を画面の初期値にセットします [FN025]
         $data = [
             'id' => $attendance->id,
             'year' => $year,
@@ -286,13 +286,13 @@ class AttendanceRecordController extends Controller
             'application' => $application,
         ];
 
-        // 提供Bladeが必要としている変数名（$user, $data）で綺麗に引き渡します
+        // 提供Bladeが必要としている変数名（$user, $data）で引き渡します
         return view('user.user-detail', compact('user', 'data'));
     }
 
     /**
      * 一般ユーザー：修正申請を保存する処理 [FN026]
-     * 
+     *
      * @param \App\Http\Requests\StampCorrectionRequest $request
      * @param int $id
      * @return \Illuminate\Http\RedirectResponse
@@ -339,7 +339,7 @@ class AttendanceRecordController extends Controller
 
     /**
      * 一般ユーザー：ログインユーザーの自身の申請一覧を表示する [FN027]
-     * 
+     *
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\View\View
      */
@@ -347,13 +347,13 @@ class AttendanceRecordController extends Controller
     {
         $user = Auth::user();
 
-        // 【開発プロセス遵守】Eager Loading (with) を使用して、N+1問題を完璧に防止します
+        // Eager Loading (with) を使用して、N+1問題を防止します
         $allRequests = \App\Models\StampCorrectionRequest::where('applicant_id', $user->id)
             ->with('attendanceRecord')
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // 💡 【10-5対応】foreachループを完全排除し、LaravelのCollectionメソッド(map)でスマートに一撃成形します！
+        // 💡 【10-5対応】foreachループを排除し、LaravelのCollectionメソッド(map)で成形します
         $formattedApplications = $allRequests->map(function ($req) {
             return [
                 'id' => $req->id,
@@ -364,7 +364,7 @@ class AttendanceRecordController extends Controller
             ];
         })->all(); // 既存のBladeが配列としてループ（@foreach）を回せるよう、最後に ->all() で配列に戻して引き渡します
 
-        // 提供Bladeが必要としている変数名（$user, $formattedApplications）で綺麗に引き渡します
+        // 提供Bladeが必要としている変数名（$user, $formattedApplications）で引き渡します
         return view('user.user-application-list', compact('user', 'formattedApplications'));
     }
 }

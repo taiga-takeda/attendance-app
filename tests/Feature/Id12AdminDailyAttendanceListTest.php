@@ -60,7 +60,7 @@ class Id12AdminDailyAttendanceListTest extends TestCase
             'admin_status' => true,
         ]);
 
-        // 💡 画面上の表示仕様に合わせてスラッシュ区切り（Y/m/d）で検証します
+        // 画面上の表示仕様に合わせてスラッシュ区切り（Y/m/d）で検証します
         $todayDisplay = \Carbon\Carbon::today()->format('Y/m/d');
 
         $response = $this->actingAs($admin)->get('/admin/attendance/list');
@@ -80,7 +80,6 @@ class Id12AdminDailyAttendanceListTest extends TestCase
             'admin_status' => true,
         ]);
 
-        // URLパラメータはハイフン、画面表示はスラッシュ（Y/m/d）に完全に適合させます！
         $prevDayParam = \Carbon\Carbon::today()->subDay()->format('Y-m-d');
         $prevDayDisplay = \Carbon\Carbon::today()->subDay()->format('Y/m/d');
 
@@ -101,7 +100,6 @@ class Id12AdminDailyAttendanceListTest extends TestCase
             'admin_status' => true,
         ]);
 
-        // URLパラメータはハイフン、画面表示はスラッシュ（Y/m/d）に完全に適合させます！
         $nextDayParam = \Carbon\Carbon::today()->addDay()->format('Y-m-d');
         $nextDayDisplay = \Carbon\Carbon::today()->addDay()->format('Y/m/d');
 

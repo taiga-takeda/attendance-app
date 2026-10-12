@@ -70,7 +70,7 @@ class Id09UserAttendanceListTest extends TestCase
         ]);
         $user->markEmailAsVerified();
 
-        // 前月の文字列（例: 2026-09）をクエリに送り、画面上に「2026/09」が切り替わって表示されているか徹底検証します
+        // 前月の文字列（例: 2026-09）をクエリに送り、画面上に「2026/09」が切り替わって表示されているか検証
         $prevMonthParam = \Carbon\Carbon::today()->subMonth()->format('Y-m');
         $prevMonthDisplay = \Carbon\Carbon::today()->subMonth()->format('Y/m');
 
@@ -92,7 +92,7 @@ class Id09UserAttendanceListTest extends TestCase
         ]);
         $user->markEmailAsVerified();
 
-        // 翌月の文字列（例: 2026-11）をクエリに送り、画面上に「2026/11」が切り替わって表示されているか徹底検証します
+        // 翌月の文字列（例: 2026-11）をクエリに送り、画面上に「2026/11」が切り替わって表示されているか検証
         $nextMonthParam = \Carbon\Carbon::today()->addMonth()->format('Y-m');
         $nextMonthDisplay = \Carbon\Carbon::today()->addMonth()->format('Y/m');
 

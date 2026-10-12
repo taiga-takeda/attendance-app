@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\AttendanceRecord;
-use App\Models\RestRecord;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -27,7 +26,7 @@ class AdminAttendanceController extends Controller
         $previousDay = $date->copy()->subDay()->format('Y-m-d');
         $nextDay = $date->copy()->addDay()->format('Y-m-d');
 
-        // 【開発プロセス遵守】Eager Loading (with) を使用して全ユーザーと本日の勤怠・休憩を一括取得（N+1を徹底防止）
+        // Eager Loading (with) を使用して全ユーザーと本日の勤怠・休憩を一括取得（N+1を防止）
         $users = User::where('admin_status', false)
             ->with(['attendanceRecords' => function ($query) use ($dateParam) {
                 $query->where('date', $dateParam)->with('restRecords');
@@ -115,7 +114,7 @@ class AdminAttendanceController extends Controller
             'comment' => '', // 基本機能段階の初期値
         ];
 
-        // 提供Bladeが必要としている変数名（$user, $attendanceRecord）で綺麗に引き渡します [FN028]
+        // 提供Bladeが必要としている変数名（$user, $attendanceRecord）でに引き渡します [FN028]
         return view('admin.admin-detail', compact('user', 'attendanceRecord'));
     }
 
@@ -126,7 +125,7 @@ class AdminAttendanceController extends Controller
     {
         $attendance = AttendanceRecord::findOrFail($id);
 
-        // 💡 1. 管理者の入力内容で勤怠レコード（親）を直接上書きアップデート [FN028]
+        // 1. 管理者の入力内容で勤怠レコード（親）を直接上書きアップデート [FN028]
         $attendance->update([
             'clock_in' => $request->input('new_clock_in'),
             'clock_out' => $request->input('new_clock_out'),
@@ -160,7 +159,7 @@ class AdminAttendanceController extends Controller
     }
     public function showApplicationList(Request $request): View
     {
-        // 【開発プロセス遵守】Eager Loading (with) を使用して、N+1問題を完璧に防止して一括取得！
+        // 【開発プロセス遵守】Eager Loading (with) を使用して、N+1問題を防止して一括取得
         $applicationsCollection = \App\Models\StampCorrectionRequest::with(['user', 'attendanceRecord'])
             ->orderBy('created_at', 'desc')
             ->get();
@@ -168,8 +167,7 @@ class AdminAttendanceController extends Controller
         foreach ($applicationsCollection ?? [] as $application) {
             $application->approval_status = $application->status === 0 ? '承認待ち' : '承認済み';
 
-            // 💡 提供Bladeの仕様が $application->comment であっても $application->proposed_comment であっても
-            // 200%確実に画面に出力されるよう、両方に申請理由のテキストを流し込みます！
+            // 提供Bladeの仕様が $application->comment であっても $application->proposed_comment であっても画面に出力されるよう、両方に申請理由のテキストを流し込みます
             $application->comment = $application->proposed_comment;
             $application->reason = $application->proposed_comment;
         }
@@ -184,13 +182,13 @@ class AdminAttendanceController extends Controller
      */
     public function showApplicationDetail(int $id): View
     {
-        // 【開発プロセス遵守】Eager Loading (with) を使用して申請に紐づく情報をN+1問題を完璧に防止して一括取得 [FN030]
+        // Eager Loading (with) を使用して申請に紐づく情報をN+1問題を防止して一括取得 [FN030]
         $application = \App\Models\StampCorrectionRequest::with(['user', 'attendanceRecord', 'proposedRestRecords'])->findOrFail($id);
 
         // 提供Bladeが求める「$user」変数（申請者情報）を組み立てます [FN030]
         $user = $application->user;
 
-        // 💡 提供Bladeの $application->new_date->format(...) 仕様に100%適合させるため、Carbonオブジェクトを動的にセットします [FN030]
+        // 提供Bladeの $application->new_date->format(...) 仕様に100%適合させるため、Carbonオブジェクトを動的にセットします [FN030]
         $application->new_date = Carbon::parse($application->attendanceRecord->date);
 
         // 時間やテキストの動的プロパティをBladeの仕様に合わせて流し込みます [FN030]
@@ -199,7 +197,7 @@ class AdminAttendanceController extends Controller
         $application->comment = $application->proposed_comment;
         $application->approval_status = $application->status === 0 ? '承認待ち' : '承認済み';
 
-        // 💡 提供Bladeの $application->proposalBreaks 仕様に適合させるため、コレクションオブジェクトを成形してセットします [FN030]
+        //  提供Bladeの $application->proposalBreaks 仕様に適合させるため、コレクションオブジェクトを成形してセットします [FN030]
         $proposalBreaks = collect();
         foreach ($application->proposedRestRecords ?? [] as $rest) {
             $proposalBreaks->push((object)[
@@ -212,12 +210,12 @@ class AdminAttendanceController extends Controller
         // 配列アクセス $application['id'] にも対応できるよう一時的にキーをセットします [FN030]
         $application['id'] = $application->id;
 
-        // 提供Bladeが必要としている変数名（$user, $application）で綺麗に引き渡します [FN030]
+        // 提供Bladeが必要としている変数名（$user, $application）で引き渡します [FN030]
         return view('admin.admin-application-detail', compact('user', 'application'));
     }
 
     /**
-     * 👑 管理者側：申請に対して「承認」ボタンを押した際、スタッフの打刻データを正式に書き換える処理 [FN030]
+     * 管理者側：申請に対して「承認」ボタンを押した際、スタッフの打刻データを正式に書き換える処理 [FN030]
      */
     public function approveApplication(int $id): \Illuminate\Http\RedirectResponse
     {
@@ -225,7 +223,7 @@ class AdminAttendanceController extends Controller
         \DB::transaction(function () use ($id) {
             $application = \App\Models\StampCorrectionRequest::with(['attendanceRecord', 'proposedRestRecords'])->findOrFail($id);
 
-            // 💡 1. 大元の勤怠レコード（親データ）を、申請された修正希望時間で正式に上書きアップデートします [FN030]
+            // 1. 大元の勤怠レコード（親データ）を、申請された修正希望時間で正式に上書きアップデートします [FN030]
             $application->attendanceRecord->update([
                 'clock_in' => $application->proposed_clock_in,
                 'clock_out' => $application->proposed_clock_out,
@@ -251,7 +249,7 @@ class AdminAttendanceController extends Controller
                 }
             }
 
-            // 💡 3. この申請自体のステータスを「1：承認済み」に変更し、承認情報を刻みます [FN030]
+            // 3. この申請自体のステータスを「1：承認済み」に変更し、承認情報を刻みます [FN030]
             $application->update([
                 'status' => 1, // 1: 承認済み
                 'approver_id' => auth()->id(),
@@ -264,8 +262,8 @@ class AdminAttendanceController extends Controller
     }
 
     /**
-     * 👑 管理者側：全一般スタッフの一覧画面を表示する [FN028]
-     * 
+     * 管理者側：全一般スタッフの一覧画面を表示する [FN028]
+     *
      * @return \Illuminate\View\View
      */
     public function showStaffList(): \Illuminate\View\View
@@ -278,8 +276,8 @@ class AdminAttendanceController extends Controller
     }
 
     /**
-     * 👑 管理者側：特定のスタッフの月次勤怠一覧（出勤簿）を表示する [FN028]
-     * 
+     * 管理者側：特定のスタッフの月次勤怠一覧（出勤簿）を表示する [FN028]
+     *
      * @param \Illuminate\Http\Request $request
      * @param int $id
      * @return \Illuminate\View\View
@@ -289,7 +287,6 @@ class AdminAttendanceController extends Controller
         // 該当の一般スタッフの情報を取得
         $user = \App\Models\User::where('admin_status', false)->findOrFail($id);
 
-        // 💡 提供Bladeのリンク仕様（?date=2026-09 や ?month=2026-09）のどちらがきても100%確実に年月を検知します！
         $monthParam = $request->query('date', $request->query('month', \Carbon\Carbon::today()->format('Y-m')));
 
         // 文字列の長さを安全に考慮し、確実に「Y-m」の形式（例: 2026-10）に成形します
@@ -299,7 +296,6 @@ class AdminAttendanceController extends Controller
         $previousMonth = $currentMonth->copy()->subMonth()->format('Y-m');
         $nextMonth = $currentMonth->copy()->addMonth()->format('Y-m');
 
-        // 💡 提供Bladeが $prevMonth / $previousMonth のどちらの名前で変数を呼んでいても200%対応できるよう両方用意します！
         $prevMonth = $previousMonth;
 
         // 指定された年月の1日から末日までの全日数をループで走査します
@@ -356,7 +352,7 @@ class AdminAttendanceController extends Controller
 
         $date = $currentMonth;
         $formattedAttendanceRecords = $attendanceRecords;
-        // 👑 【空データ安全ガード】データが1件以上存在する場合のみ、安全に曜日変換の処理を通します！
+        // データが1件以上存在する場合のみ、安全に曜日変換の処理を通します
         if ($attendanceRecords && $attendanceRecords->count() > 0) {
             $attendanceRecords->each(function ($record) {
                 if (isset($record->formatted_date) && $record->formatted_date !== '') {

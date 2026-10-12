@@ -87,7 +87,7 @@ class Id10UserAttendanceDetailTest extends TestCase
 
         $response = $this->actingAs($user)->get('/attendance/' . $attendance->id);
         $response->assertStatus(200);
-        // HTMLインデントやコロンの影響を回避するため、出勤「09」「15」と退勤「18」「30」が順番に含まれているか安全に検証
+        // HTMLインデントやコロンの影響を回避するため、出勤「09」「15」と退勤「18」「30」が順番に含まれているか検証
         $response->assertSeeInOrder(['09', '15', '18', '30']);
     }
 

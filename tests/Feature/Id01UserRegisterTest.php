@@ -119,9 +119,9 @@ class Id01UserRegisterTest extends TestCase
             'password' => 'password123',
             'password_confirmation' => 'password123',
         ]);
-        
+
         $response->assertStatus(302);
-        
+
         $this->assertDatabaseHas('users', [
             'name' => '新しい一般スタッフ',
             'email' => 'newuser@example.com',

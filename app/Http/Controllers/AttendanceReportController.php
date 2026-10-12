@@ -15,12 +15,11 @@ class AttendanceReportController extends Controller
 {
     /**
      * 一般ユーザー専用：マイ勤怠レポート画面の表示および過去6ヶ月分の集計処理
-     * 
-     * 💡 【コード品質規約完全適合】
-     * - 引数・戻り値の型宣言 (: View) を厳密に明記
-     * - PHPDocによる引数、戻り値の完全解説
+     *
+     * - 引数・戻り値の型宣言 (: View) を明記
+     * - PHPDocによる引数、戻り値の解説
      * - foreach等の手続き的ループを排し、Collectionメソッドを効果的に活用
-     * - Eager Loading (with) による N+1 問題の完全根絶
+     * - Eager Loading (with) による N+1 問題の防止
      *
      * @param Request $request リクエストオブジェクト（monthパラメータ等）
      * @return View レポート画面のビューオブジェクト
@@ -28,16 +27,16 @@ class AttendanceReportController extends Controller
     public function index(Request $request): View
     {
         $user = Auth::user();
-        
-        // 💡 提供されるBladeのパラメータ仕様（デフォルトはシステム当月）
+
+        // 提供されるBladeのパラメータ仕様（デフォルトはシステム当月）
         $monthParam = $request->query('month', Carbon::now()->format('Y-m'));
         $targetMonthStart = Carbon::parse($monthParam . '-01')->startOfMonth();
 
-        // 👑 【開発プロセス仕様適合】過去6ヶ月前から当月末までの全データを範囲取得
+        // 過去6ヶ月前から当月末までの全データを範囲取得
         $sixMonthsAgoStart = $targetMonthStart->copy()->subMonths(5)->startOfMonth();
         $targetMonthEnd = $targetMonthStart->copy()->endOfMonth();
 
-        // 📊 【N+1問題完全防止】Eager Loading (with) を使用して休憩レコードを同時取得
+        //【N+1問題防止】Eager Loading (with) を使用して休憩レコードを同時取得
         $allRecords = AttendanceRecord::where('user_id', $user->id)
             ->whereBetween('date', [$sixMonthsAgoStart->format('Y-m-d'), $targetMonthEnd->format('Y-m-d')])
             ->with('restRecords')
@@ -46,7 +45,7 @@ class AttendanceReportController extends Controller
         // ==================================================
         // 1. 【基本サマリーの集計】（過去6ヶ月全体の累計・平均を分単位で算出）
         // ==================================================
-        // 💡 【Collectionメソッドの効果的活用】手続き的なループを完全に排除し、規約を最優先に遵守
+
         $validRecords = $allRecords->filter(function (AttendanceRecord $record): bool {
             return !is_null($record->clock_in) && !is_null($record->clock_out);
         });
@@ -90,7 +89,7 @@ class AttendanceReportController extends Controller
         $workedDaysCount = $validRecords->count();
         $avgWorkMinutes = $workedDaysCount > 0 ? round($totalWorkMinutesAll / $workedDaysCount) : 0;
 
-        // 👑 支給Blade（17行目、21行目、25行目）の変数要件キーへ100%シンクロ
+
         $summary = [
             'total_work_minutes' => round($totalWorkMinutesAll),
             'total_overtime_minutes' => round($totalOvertimeMinutesAll),
@@ -101,13 +100,13 @@ class AttendanceReportController extends Controller
         // 2. 【月次推移の集計】（過去6ヶ月間の各月の数値を配列で成形）
         // ==================================================
         $monthlyTrend = [];
-        
+
         for ($i = 5; $i >= 0; $i--) {
             $currentMonth = $targetMonthStart->copy()->subMonths($i);
             $monthStr = $currentMonth->format('Y-m');
             $monthDisplay = $currentMonth->format('n月');
 
-            // 該当月のレコードだけをCollectionメソッドで超高速フィルタリング
+            // 該当月のレコードだけをCollectionメソッドでフィルタリング
             $monthRecords = $allRecords->filter(function (AttendanceRecord $r) use ($monthStr): bool {
                 return str_starts_with($r->date, $monthStr) && !is_null($r->clock_in) && !is_null($r->clock_out);
             });
@@ -137,7 +136,7 @@ class AttendanceReportController extends Controller
                 return $workMinutes > 480 ? ($workMinutes - 480) : 0;
             });
 
-            // 💡 支給Blade仕様名：$monthlyTrend へ配列アクセス形式で格納
+            // 支給Blade仕様名：$monthlyTrend へ配列アクセス形式で格納
             $monthlyTrend[] = [
                 'month' => $monthDisplay,
                 'work_minutes' => round($monthWorkMinutes),
@@ -177,14 +176,14 @@ class AttendanceReportController extends Controller
             return ($workSec / 3600) > 10;
         })->count();
 
-        // 👑 支給Blade（56行目、60行目、64行目）の変数名仕様へ完全バインド
+        // 支給Blade（56行目、60行目、64行目）の変数名仕様へバインド
         $anomalies = [
             'late_count' => $lateCount,
             'early_leave_count' => $earlyLeaveCount,
             'long_work_count' => $longWorkCount,
         ];
 
-        // 💡 ナビゲーション用の前月・翌月パラメータ
+        // ナビゲーション用の前月・翌月パラメータ
         $prevMonth = $targetMonthStart->copy()->subMonth()->format('Y-m');
         $nextMonth = $targetMonthStart->copy()->addMonth()->format('Y-m');
 

@@ -41,9 +41,7 @@ class AttendanceRecord extends Model
     {
         return $this->hasMany(StampCorrectionRequest::class);
     }
-    /**
-     * 💡 【提供Blade無修正対応】大元のdateを壊さず、表示用として「10/11(日)」を返す安全なアクセサ
-     */
+
     public function getFormattedDateAttribute()
     {
         if (!$this->attributes['date']) return '';
@@ -52,12 +50,11 @@ class AttendanceRecord extends Model
         return $carbonDate->format('m/d') . '(' . $carbonDate->isoFormat('ddd') . ')';
     }
     // ==================================================
-    // 🌐 【公開API仕様書完全適合：別名リレーション定義】
+    // 【公開API仕様書：別名リレーション定義】
     // ==================================================
-    // 💡 user() リレーションは既存のメソッドと完全に共通で使用するため、重複を避け安全に除外しました！
-    
+
     /**
-     * API仕様書（breaks）に完全適合させるリレーション（休憩レコード一覧）
+     * API仕様書（休憩レコード一覧）
      */
     public function breaks()
     {
@@ -65,7 +62,7 @@ class AttendanceRecord extends Model
     }
 
     /**
-     * API仕様書（applications）に完全適合させるリレーション（修正申請一覧）
+     * API仕様書（修正申請一覧）
      */
     public function applications()
     {

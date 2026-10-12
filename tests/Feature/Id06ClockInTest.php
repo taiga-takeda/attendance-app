@@ -35,7 +35,7 @@ class Id06ClockInTest extends TestCase
             'action' => 'clock_in',
         ]);
         $response->assertStatus(302);
-        
+
         // 処理後にステータスが「出勤中」に変更されているか検証
         $response = $this->actingAs($user)->get('/attendance');
         $response->assertSee('出勤中');
@@ -97,11 +97,11 @@ class Id06ClockInTest extends TestCase
             'clock_in' => '09:00:00',
             'clock_out' => '18:00:00', // 一覧に表示させるため退勤もセット
         ]);
-        
+
         // 勤怠一覧画面を開く
         $response = $this->actingAs($user)->get('/attendance/list');
         $response->assertStatus(200);
-        
+
         // 一覧画面の中に、自分の出勤時間「09:00」が正確に記録・出力されているか検証
         $response->assertSee('09:00');
     }

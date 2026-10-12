@@ -58,10 +58,10 @@ class AdminCsvExportController extends Controller
         $response = new StreamedResponse(function () use ($daysInMonth, $date, $attendanceRecords) {
             $stream = fopen('php://output', 'w');
 
-            // 💡 【内訳9】CSVのヘッダ項目（見出し）を定義
+            // 【内訳9】CSVのヘッダ項目（見出し）を定義
             $headers = ['日付', '出勤時間', '退勤時間', '休憩時間', '合計就業時間'];
-            
-            // 💡 【内訳10：文字化け対策】環境を選ばない最も安定したShift-JIS一括変換をかけてヘッダを書き込みます
+
+            //  【内訳10：文字化け対策】環境を選ばない最も安定したShift-JIS一括変換をかけてヘッダを書き込みます
             $sjisHeaders = array_map(function ($value) {
                 return mb_convert_encoding($value, 'SJIS-win', 'UTF-8');
             }, $headers);
@@ -70,7 +70,7 @@ class AdminCsvExportController extends Controller
             collect(range(1, $daysInMonth))->each(function ($day) use ($stream, $date, $attendanceRecords) {
                 $d = $date->copy()->day($day);
                 $currentDateStr = $d->format('Y-m-d');
-                
+
                 \Carbon\Carbon::setLocale('ja');
                 $dayOfWeek = '(' . $d->isoFormat('ddd') . ')';
                 $dateCol = $d->format('m/d') . $dayOfWeek;
@@ -88,7 +88,6 @@ class AdminCsvExportController extends Controller
                     $clockInCol = $clockIn->format('H:i');
                     $clockOutCol = $clockOut ? $clockOut->format('H:i') : 'ー';
 
-                    // 💡 【タイポ完全修正】?? の後ろに [] をしっかりと追記し、Syntax Error を完全に解消しました！
                     $totalBreakSeconds = collect($record->restRecords ?? [])
                         ->filter(function ($rest) { return $rest->break_in && $rest->break_out; })
                         ->sum(function ($rest) {
@@ -114,12 +113,12 @@ class AdminCsvExportController extends Controller
                 }
 
                 $row = [$dateCol, $clockInCol, $clockOutCol, $totalBreakTimeCol, $totalTimeCol];
-                
+
                 // 各行のセルの値データも漏れなく完全にShift-JISに変換して出力ストリームに書き込み
                 $sjisRow = array_map(function ($value) {
                     return mb_convert_encoding($value, 'SJIS-win', 'UTF-8');
                 }, $row);
-                
+
                 fputcsv($stream, $sjisRow);
             });
 

@@ -23,12 +23,11 @@ class Id04CurrentDatetimeTest extends TestCase
             'admin_status' => false,
         ]);
 
-        // 💡 【100%解決】Laravel公式の強制認証メソッドを叩き、メール認証ガードを確実に突破させます！
         $user->markEmailAsVerified();
 
         // 1. 勤怠打刻画面を開き、2. 画面上の日時情報が現在のシステム日時と一致するか検証
         $response = $this->actingAs($user)->get('/attendance');
-        
+
         // 画面のHTMLソース内に、本日の日付（例: Y/m/d）が含まれているかチェック
         $response->assertStatus(200);
         $response->assertSee(\Carbon\Carbon::now()->format('Y/m/d'));

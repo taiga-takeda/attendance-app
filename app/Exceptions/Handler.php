@@ -28,14 +28,13 @@ class Handler extends ExceptionHandler
     ];
 
     /**
-     * 👑 【仕様書完全適合：エラーレスポンスの統一ガード（Laravel 10版）】
-     * API（api/*）エンドポイントでエラーが起きた際、指定の日本語JSONを一文字違わず自動返却させます！
+     * API（api/*）エンドポイントでエラーが起きた際、指定の日本語JSONを自動返却させます
      */
     public function register(): void
     {
         $this->renderable(function (Throwable $e, Request $request) {
             if ($request->is('api/*')) {
-                
+
                 // ① 404 Not Found
                 if ($e instanceof NotFoundHttpException) {
                     return response()->json([

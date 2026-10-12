@@ -40,7 +40,7 @@ class Id11UserAttendanceCorrectionTest extends TestCase
             'new_clock_out' => '18:00',
             'comment' => '出勤時間エラーテスト',
         ]);
-        // 💡 302リダイレクトで安全に画面が押し戻されたことを厳密に検証します！
+        // 302リダイレクトで安全に画面が押し戻されたことを検証
         $response->assertStatus(302);
     }
 

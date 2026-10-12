@@ -1,8 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Laravel\Fortify\Http\Controllers\AuthenticatedSessionController;
-use Laravel\Fortify\Http\Controllers\RegisteredUserController;
 use App\Http\Controllers\AttendanceRecordController;
 
 /*
@@ -17,9 +15,8 @@ Route::middleware(['guest'])->group(function () {
 });
 
 // ==================================================
-// 👤 【内訳4・内訳5対応】メール認証 誘導画面 ＆ 再送処理ルート（authミドルウェアのみ適用）
+//【内訳4・内訳5対応】メール認証 誘導画面 ＆ 再送処理ルート
 // ==================================================
-// 💡 誘導画面と再送処理には 'verified' をかけてはいけません（かけると自分自身に弾かれてループします）
 Route::middleware(['auth'])->group(function () {
     // 💡 【内訳4】メール認証誘導画面（Fortify標準の /email/verify へのGETアクセスを受け止めます）
     Route::get('/email/verify', function () {
@@ -34,37 +31,36 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // ==================================================
-// 👤 1. 【一般専用グループ】認証必須 ＆ 【メール認証（verified）義務化】
+// 1. 【一般専用グループ】認証必須 ＆ 【メール認証（verified）義務化】
 // ==================================================
-// 💡 一般ユーザーがログインした後の「打刻画面」や「出勤簿」にだけ、確実にメール認証を義務付けます！
+// 一般ユーザーがログインした後の「打刻画面」や「出勤簿」にだけ、確実にメール認証を義務付け
 Route::middleware(['auth', 'verified'])->group(function () {
-    
+
     // 打刻画面の表示（GET）
     Route::get('/attendance', [AttendanceRecordController::class, 'index'])->name('attendance');
 
-    // すべての打刻ボタン（出勤・退勤・休憩）がこの1つのPOSTパスに集約されます
+    // すべての打刻ボタン（出勤・退勤・休憩）がこの1つのPOSTパスに集約
     Route::post('/attendance', [AttendanceRecordController::class, 'store'])->name('attendance.store');
 
     // 勤怠一覧画面の表示（GET） [FN023]
     Route::get('/attendance/list', [AttendanceRecordController::class, 'list'])->name('attendance.list');
     // ==========================================
-    // 📊 【内訳1対応】一般ユーザー専用：マイ勤怠レポート画面の表示（GET）
+    //【内訳1対応】一般ユーザー専用：マイ勤怠レポート画面の表示（GET）
     // ==========================================
     Route::get('/attendance/report', [\App\Http\Controllers\AttendanceReportController::class, 'index'])->name('attendance.report');
 
 });
 
 // ==================================================
-// 👥 2. 【共通・管理者用グループ】認証必須（メール認証 verified はかけない）
+// 2. 【共通・管理者用グループ】認証必須
 // ==================================================
-// 💡 URL共通の出し分けクロージャや、管理者用画面はここに配置することで、管理者がメール認証エラーで弾かれるのを完全に防きます！
+// URL共通の出し分けクロージャや、管理者用画面はここに配置することで、管理者がメール認証エラーで弾かれるのを防きます
 Route::middleware(['auth'])->group(function () {
-    // 💡 ログアウト機能を自作コントローラーから、Fortify標準の安全な処理へと完全移行 [FN005, FN016]
+    // ログアウト機能を自作コントローラーから、Fortify標準の安全な処理へと完全移行 [FN005, FN016]
     Route::post('/logout', [\Laravel\Fortify\Http\Controllers\AuthenticatedSessionController::class, 'destroy'])->name('logout');
     // ==========================================
-    // 📊 勤怠詳細画面の表示（GET） [FN025, FN028]
+    // 勤怠詳細画面の表示（GET） [FN025, FN028]
     // ==========================================
-    // 💡 URLが共通（/attendance/{id}）のため、ログインユーザーの権限（admin_status）に応じて自動で呼び出すコントローラーを出し分けます！
     Route::get('/attendance/{id}', function ($id) {
         if (auth()->user() && auth()->user()->admin_status) {
             // 管理者としてログインしている場合は、管理者用の詳細画面を表示 [FN028]
@@ -75,20 +71,19 @@ Route::middleware(['auth'])->group(function () {
     })->name('attendance.detail');
 
     // ==========================================
-    // 💾 勤怠データの保存・修正申請（POST） [FN026, FN028]
+    // 勤怠データの保存・修正申請（POST） [FN026, FN028]
     // ==========================================
-    // 💡 提供BladeのactionURLが共通（/attendance/{id}）のため、権限に応じて動かすコントローラーを100%完全に分離します！
     Route::post('/attendance/{id}', function (\App\Http\Requests\StampCorrectionRequest $request, $id) {
         if (auth()->user() && auth()->user()->admin_status) {
-            // 👑 管理者の場合は、スタッフの打刻データを直接書き換えて保存（マイルストーン7） [FN028]
+            // 管理者の場合は、スタッフの打刻データを直接書き換えて保存（マイルストーン7） [FN028]
             return app(\App\Http\Controllers\Admin\AdminAttendanceController::class)->updateAttendance($request, $id);
         }
-        // 👤 一般ユーザーの場合は、自分自身の修正申請を保存（マイルストーン6） [FN026]
+        // 一般ユーザーの場合は、自分自身の修正申請を保存（マイルストーン6） [FN026]
         return app(\App\Http\Controllers\AttendanceRecordController::class)->update($request, $id);
     })->name('attendance.update');
 
     // ==========================================
-    // 📋 申請一覧画面の表示（GET） [FN027, FN030]
+    // 申請一覧画面の表示（GET） [FN027, FN030]
     // ==========================================
     Route::get('/stamp_correction_request/list', function (\Illuminate\Http\Request $request) {
         if (auth()->user() && auth()->user()->admin_status) {
@@ -104,7 +99,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/attendance/{id}', [\App\Http\Controllers\Admin\AdminAttendanceController::class, 'showDetail'])->name('admin.attendance.detail');
 
     // ==========================================
-    // 👑 管理者専用 申請承認ルート 兼 一般ユーザー申請詳細ルート（マイルストーン8） [FN025, FN030]
+    // 管理者専用 申請承認ルート 兼 一般ユーザー申請詳細ルート（マイルストーン8） [FN025, FN030]
     // ==========================================
     Route::get('/stamp_correction_request/approve/{id}', function ($id) {
         if (auth()->user() && auth()->user()->admin_status) {
@@ -120,7 +115,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/stamp_correction_request/approve/{id}', [\App\Http\Controllers\Admin\AdminAttendanceController::class, 'approveApplication'])->name('admin.application.approve');
 
     // ==========================================
-    // 👑 申請詳細・承認画面の表示（GET） [FN025, FN030]
+    // 申請詳細・承認画面の表示（GET） [FN025, FN030]
     // ==========================================
     Route::get('/application/{id}', function ($id) {
         if (auth()->user() && auth()->user()->admin_status) {
@@ -134,7 +129,7 @@ Route::middleware(['auth'])->group(function () {
     })->name('admin.application.detail');
 
     // ==========================================
-    // 👑 マイルストーン8：スタッフ一覧画面（管理者用） [FN028]
+    // マイルストーン8：スタッフ一覧画面（管理者用） [FN028]
     // ==========================================
     Route::get('/admin/staff', [\App\Http\Controllers\Admin\AdminAttendanceController::class, 'showStaffList'])->name('admin.staff.list');
     Route::get('/admin/staff/list', [\App\Http\Controllers\Admin\AdminAttendanceController::class, 'showStaffList']);
@@ -142,14 +137,14 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/user', [\App\Http\Controllers\Admin\AdminAttendanceController::class, 'showStaffList']);
 
     // ==========================================
-    // 👑 管理者専用 スタッフごとの月次勤怠一覧ルート（マイルストーン8） [FN028]
+    // 管理者専用 スタッフごとの月次勤怠一覧ルート（マイルストーン8） [FN028]
     // ==========================================
     Route::get('/admin/attendance/staff/{id}', [\App\Http\Controllers\Admin\AdminAttendanceController::class, 'showStaffMonthlyList'])->name('admin.attendance.staff-list');
     Route::post('/export', [\App\Http\Controllers\Admin\AdminCsvExportController::class, 'exportStaffMonthlyCsv'])->name('admin.attendance.staff-csv');
 });
 
 // =================---------------------------------
-// 👑 3. 管理者専用ログイン・ログアウトルート [FN016]
+// 3. 管理者専用ログイン・ログアウトルート [FN016]
 // =================---------------------------------
 Route::get('/admin/login', function () {
     return view('admin.admin-login'); // 提供されている管理者用ログインBladeを表示 [FN016]

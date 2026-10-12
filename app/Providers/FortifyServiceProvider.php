@@ -3,15 +3,11 @@
 namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
-use App\Actions\Fortify\ResetUserPassword;
-use App\Actions\Fortify\UpdateUserPassword;
-use App\Actions\Fortify\UpdateUserProfileInformation;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
-use Laravel\Fortify\Actions\RedirectIfTwoFactorAuthenticatable;
 use Laravel\Fortify\Fortify;
 
 class FortifyServiceProvider extends ServiceProvider
@@ -51,7 +47,7 @@ class FortifyServiceProvider extends ServiceProvider
 
         // 一般ユーザーログイン時に使用するBladeファイルの指定
         Fortify::loginView(function () {
-            // 💡 URLにadminが含まれる場合は、管理者専用のログイン画面を表示します [FN016]
+            // URLにadminが含まれる場合は、管理者専用のログイン画面を表示します [FN016]
             if (request()->is('admin/*') || request()->is('admin/login')) {
                 return view('admin.admin-login');
             }
@@ -62,7 +58,7 @@ class FortifyServiceProvider extends ServiceProvider
             return view('auth.verify-email');
         });
 
-        // 1. ログイン成功後の遷移先を設定（ここは元のまま触りません）
+        // 1. ログイン成功後の遷移先を設定
         $this->app->instance(
             \Laravel\Fortify\Contracts\LoginResponse::class,
             new class implements \Laravel\Fortify\Contracts\LoginResponse {

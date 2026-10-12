@@ -193,7 +193,7 @@ class Id13AdminAttendanceDetailAndCorrectionTest extends TestCase
             'comment' => '', // 備考欄を空欄で送信
         ]);
         $response->assertStatus(302);
-        // 備考入力欄に確実にバリデーションエラーが返ってきているかを厳密に検証します
+        // 備考入力欄にバリデーションエラーが返ってきているかを検証
         $response->assertSessionHasErrors(['comment']);
     }
 }

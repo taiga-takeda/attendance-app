@@ -11,9 +11,6 @@ use App\Models\AttendanceRecord;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
-/**
- * 🌐 【仕様書AP01〜AP06完全適合】公開API（JSON）のCRUD・認可完全統合コントローラー
- */
 class AttendanceRecordController extends Controller
 {
     /**
@@ -66,7 +63,6 @@ class AttendanceRecordController extends Controller
      */
     public function update(UpdateAttendanceRecordRequest $request, AttendanceRecord $attendanceRecord): AttendanceRecordResource
     {
-        // 👑 【メッセージ完全シンクロ】他ユーザーが操作を試みた際、一文字の狂いもない指定の403日本語JSONを強制出力させます！
         if ($request->user()->cannot('update', $attendanceRecord)) {
             abort(response()->json(['error' => 'この操作を実行する権限がありません。'], 403));
         }
@@ -82,13 +78,12 @@ class AttendanceRecordController extends Controller
      */
     public function destroy(AttendanceRecord $attendanceRecord): JsonResponse
     {
-        // 👑 【認証解決の適正化】$requestに頼らず auth()->user() を使用することで、500エラーを根本から100%根絶します！
         if (auth()->user()->cannot('delete', $attendanceRecord)) {
             abort(response()->json(['error' => 'この操作を実行する権限がありません。'], 403));
         }
 
         $attendanceRecord->delete();
 
-        return response()->json(null, 204); // 💡 仕様書指定：204 No Content
+        return response()->json(null, 204);
     }
 }

@@ -42,7 +42,7 @@ class Id08ClockOutTest extends TestCase
             'action' => 'clock_out',
         ]);
         $response->assertStatus(302);
-        
+
         // 処理後に画面上に表示されるステータスが「退勤済」になっているか検証
         $response = $this->actingAs($user)->get('/attendance');
         $response->assertSee('退勤済');
@@ -74,7 +74,7 @@ class Id08ClockOutTest extends TestCase
         // 勤怠一覧画面から退勤の日付を確認する
         $response = $this->actingAs($user)->get('/attendance/list');
         $response->assertStatus(200);
-        
+
         // 勤怠一覧画面に退勤時刻が正確に記録・表示されているか検証
         $response->assertSeeInOrder(['18', '00']);
     }
