@@ -8,6 +8,7 @@ use App\Http\Controllers\AttendanceRecordController;
 | Web Routes
 |--------------------------------------------------------------------------
 */
+Route::redirect('/', '/attendance');
 
 // ゲスト用ルート（未認証でもアクセス可能）
 Route::middleware(['guest'])->group(function () {
